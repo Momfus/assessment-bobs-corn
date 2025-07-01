@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CornStoreService } from '../../services/corn-store.service';
 
@@ -6,7 +6,8 @@ import { CornStoreService } from '../../services/corn-store.service';
   selector: 'app-corn-store-dashboard',
   templateUrl: './corn-store-dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule]
+  standalone: true,
+  imports: [CommonModule],
 })
 export class CornStoreDashboardComponent {
   cornService = inject(CornStoreService);
@@ -16,6 +17,7 @@ export class CornStoreDashboardComponent {
   purchaseCount = this.cornService.purchaseCount;
   secondsToWait = this.cornService.secondsToWait;
   timeSinceLastPurchase = this.cornService.timeSinceLastPurchase;
+  canBuy = this.cornService.canBuy;
 
   onBuyCorn() {
     this.cornService.buyCorn();
