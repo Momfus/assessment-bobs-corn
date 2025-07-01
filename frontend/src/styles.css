@@ -3,3 +3,15 @@
 @plugin "daisyui" {
   themes: forest --default;
 }
+
+
+.dropdown a {
+  @apply my-2
+}
+.dropdown .active {
+  @apply bg-yellow-600 text-white;
+}
+
+.dropdown a:hover {
+  @apply bg-yellow-700 text-white;
+}

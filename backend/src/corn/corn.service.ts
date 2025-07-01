@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class CornService {
-  private readonly RATE_LIMIT_MS = 5000; //@TODO: Change to one minute: 60000;
+  private readonly RATE_LIMIT_MS = 60000;
 
   constructor(
     @InjectRepository(CornPurchase)

@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Get,
+  Query,
 } from '@nestjs/common';
 import { CornService } from './corn.service';
 import { Request } from 'express';
@@ -41,10 +42,10 @@ export class CornController {
 
   @Get('info')
   async getPurchaseInfo(
+    @Query('clientId') clientId: string,
     @Req() request: Request,
-    @Body() body: { clientId?: string },
   ) {
-    const clientId = body.clientId || request.ip || 'unknown';
-    return this.cornService.getPurchaseInfo(clientId);
+    const finalClientId = clientId || request.ip || 'unknown';
+    return this.cornService.getPurchaseInfo(finalClientId);
   }
 }
