@@ -22,7 +22,6 @@ import { Router } from '@angular/router';
       </button>
     </div>
   `,
-  standalone: true
 })
 export class NotFoundPageComponent {
   router = inject(Router);

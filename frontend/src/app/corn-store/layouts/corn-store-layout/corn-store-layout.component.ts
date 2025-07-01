@@ -7,6 +7,5 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet, CornStoreNavbarComponent],
   templateUrl: './corn-store-layout.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class CornStoreLayoutComponent { }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CornStoreService } from '../../services/corn-store.service';
 
@@ -7,22 +7,19 @@ import { CornStoreService } from '../../services/corn-store.service';
   templateUrl: './corn-store-dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule],
 })
-export class CornStoreDashboardComponent implements OnInit {
-  private cornStoreService = inject(CornStoreService);
+export class CornStoreDashboardComponent {
+  cornService = inject(CornStoreService);
 
-  errorMessage = this.cornStoreService.errorMessage;
-  isLoading = this.cornStoreService.isLoading;
-  purchaseCount = this.cornStoreService.purchaseCount;
-  secondsToWait = this.cornStoreService.secondsToWait;
-  timeSinceLastPurchase = this.cornStoreService.timeSinceLastPurchase;
-
-  ngOnInit() {
-    this.cornStoreService.loadPurchaseInfo();
-  }
+  errorMessage = this.cornService.errorMessage;
+  isLoading = this.cornService.isLoading;
+  purchaseCount = this.cornService.purchaseCount;
+  secondsToWait = this.cornService.secondsToWait;
+  timeSinceLastPurchase = this.cornService.timeSinceLastPurchase;
+  canBuy = this.cornService.canBuy;
 
   onBuyCorn() {
-    this.cornStoreService.buyCorn();
+    this.cornService.buyCorn();
   }
 }

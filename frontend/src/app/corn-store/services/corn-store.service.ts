@@ -1,5 +1,12 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, inject, signal, OnDestroy } from '@angular/core';
+import {
+  Injectable,
+  computed,
+  effect,
+  inject,
+  signal,
+  OnDestroy,
+} from '@angular/core';
 import { catchError, of, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { PurchaseInfo } from '../interfaces/purchase-info.interface';
@@ -12,65 +19,63 @@ const baseUrl = environment.baseUrl;
 export class CornStoreService implements OnDestroy {
   private http = inject(HttpClient);
   private timer: any;
+  private readonly RATE_LIMIT_MS = 60000;
 
+  availableUsers = signal([
+    { name: 'User 1', id: 'user-1' },
+    { name: 'User 2', id: 'user-2' },
+    { name: 'User 3', id: 'user-3' },
+  ]);
+
+  currentUser = signal(this.availableUsers()[0]);
   errorMessage = signal('');
   isLoading = signal(false);
   purchaseInfo = signal<PurchaseInfo | null>(null);
-
   private timeUpdateTrigger = signal(0);
 
+  // Effect to load purchase info on initialization
+  private userChangeEffect = effect(() => {
+    const userId = this.currentUser().id;
+    this.loadPurchaseInfo();
+    this.startTimer();
+  });
+
   purchaseCount = computed(() => this.purchaseInfo()?.totalCount ?? 0);
+
   secondsToWait = computed(() => {
-
     this.timeUpdateTrigger();
+    if (!this.purchaseInfo()?.lastPurchaseTime) return 0;
 
-    const baseSeconds = this.purchaseInfo()?.secondsUntilNextPurchase ?? 0;
-    const lastUpdate = this.purchaseInfo()?.lastPurchaseTime;
+    const now = Date.now();
+    const lastPurchaseTime = new Date(
+      this.purchaseInfo()!.lastPurchaseTime!
+    ).getTime();
+    const elapsedMs = now - lastPurchaseTime;
+    const remainingMs = Math.max(0, this.RATE_LIMIT_MS - elapsedMs);
 
-    if (!lastUpdate || baseSeconds <= 0) return 0;
-
-    const now = new Date();
-    const elapsedSeconds = Math.floor(
-      (now.getTime() - lastUpdate.getTime()) / 1000
-    );
-    const remainingSeconds = Math.max(0, baseSeconds - elapsedSeconds);
-
-    return remainingSeconds;
+    return Math.ceil(remainingMs / 1000);
   });
 
-  lastPurchaseTime = computed(() => {
-    return this.purchaseInfo()?.lastPurchaseTime ?? null;
-  });
+  canBuy = computed(() => this.secondsToWait() === 0);
 
   timeSinceLastPurchase = computed(() => {
-    this.timeUpdateTrigger();
+    this.timeUpdateTrigger(); // Reacciona a cambios
+    if (!this.purchaseInfo()?.lastPurchaseTime) return 'Never';
 
-    const lastTime = this.lastPurchaseTime();
-    if (!lastTime) return 'Never';
+    const lastTime = new Date(this.purchaseInfo()!.lastPurchaseTime!).getTime();
+    const seconds = Math.floor((Date.now() - lastTime) / 1000);
 
-    const now = new Date();
-    const totalSeconds = Math.floor(
-      (now.getTime() - lastTime.getTime()) / 1000
-    );
-
-    if (totalSeconds < 60) return `${totalSeconds} seconds ago`;
-
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s ago`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s ago`;
-    } else {
-      return `${seconds} seconds ago`;
-    }
+    if (seconds < 60) return `${seconds} seconds ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    return `${Math.floor(seconds / 3600)} hours ago`;
   });
 
   loadPurchaseInfo() {
+    const clientId = this.currentUser().id;
     this.http
-      .get<any>(`${baseUrl}/corn/info`)
+      .get<PurchaseInfo>(`${baseUrl}/corn/info`, {
+        params: { clientId },
+      })
       .pipe(
         catchError(() => {
           this.errorMessage.set('Could not load purchase info');
@@ -79,39 +84,32 @@ export class CornStoreService implements OnDestroy {
       )
       .subscribe((data) => {
         if (data) {
-          // Transform lastPurchaseTime to a Date object if it exists
-          const purchaseInfo: PurchaseInfo = {
+          this.purchaseInfo.set({
             ...data,
             lastPurchaseTime: data.lastPurchaseTime
               ? new Date(data.lastPurchaseTime)
               : null,
-          };
-          this.purchaseInfo.set(purchaseInfo);
-          this.errorMessage.set('');
-
-          this.startTimer();
+          });
         }
       });
   }
 
   buyCorn() {
-    if (this.isLoading()) return;
+    if (!this.canBuy() || this.isLoading()) return;
 
     this.isLoading.set(true);
-    this.errorMessage.set('');
-
     this.http
-      .post<{ message: string }>(`${baseUrl}/corn`, {})
+      .post<{ message: string }>(`${baseUrl}/corn`, {
+        clientId: this.currentUser().id,
+      })
       .pipe(
-        tap(() => {
-          this.loadPurchaseInfo();
-        }),
+        tap(() => this.loadPurchaseInfo()),
         catchError((error) => {
-          if (error.status === 429) {
-            this.errorMessage.set(error.error.error);
-          } else {
-            this.errorMessage.set('An error occurred. Please try again.');
-          }
+          this.errorMessage.set(
+            error.status === 429
+              ? error.error.error
+              : 'An error occurred. Please try again.'
+          );
           this.loadPurchaseInfo();
           return of(null);
         }),
@@ -120,12 +118,17 @@ export class CornStoreService implements OnDestroy {
       .subscribe();
   }
 
+  setCurrentUser(userId: string) {
+    const user = this.availableUsers().find((u) => u.id === userId);
+    if (user) {
+      this.currentUser.set(user);
+    }
+  }
 
   private startTimer() {
     this.stopTimer();
-
     this.timer = setInterval(() => {
-      this.timeUpdateTrigger.set(this.timeUpdateTrigger() + 1);
+      this.timeUpdateTrigger.update((v) => v + 1);
     }, 1000);
   }
 
