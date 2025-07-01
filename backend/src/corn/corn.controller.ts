@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Post,
   Req,
@@ -14,15 +15,15 @@ export class CornController {
   constructor(private readonly cornService: CornService) {}
 
   @Post()
-  async buyCorn(@Req() request: Request) {
+  async buyCorn(@Req() request: Request, @Body() body: { clientId?: string }) {
     try {
-      const clientId = request.ip || 'unknown';
+      const clientId = body.clientId || request.ip || 'unknown';
       return await this.cornService.buyCorn(clientId);
     } catch {
       throw new HttpException(
         {
           status: HttpStatus.TOO_MANY_REQUESTS,
-          error: 'Solo puedes comprar 1 mazorca por minuto',
+          error: 'Solo puedes comprar despues que termine el tiempo de espera',
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );
@@ -30,14 +31,20 @@ export class CornController {
   }
 
   @Get('count')
-  async getPurchaseCount(@Req() request: Request) {
-    const clientId = request.ip || 'unknown';
+  async getPurchaseCount(
+    @Req() request: Request,
+    @Body() body: { clientId?: string },
+  ) {
+    const clientId = body.clientId || request.ip || 'unknown';
     return this.cornService.getPurchaseCount(clientId);
   }
 
   @Get('info')
-  async getPurchaseInfo(@Req() request: Request) {
-    const clientId = request.ip || 'unknown';
+  async getPurchaseInfo(
+    @Req() request: Request,
+    @Body() body: { clientId?: string },
+  ) {
+    const clientId = body.clientId || request.ip || 'unknown';
     return this.cornService.getPurchaseInfo(clientId);
   }
 }
