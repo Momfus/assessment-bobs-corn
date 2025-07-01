@@ -59,7 +59,7 @@ export class CornStoreService implements OnDestroy {
   canBuy = computed(() => this.secondsToWait() === 0);
 
   timeSinceLastPurchase = computed(() => {
-    this.timeUpdateTrigger(); // Reacciona a cambios
+    this.timeUpdateTrigger();
     if (!this.purchaseInfo()?.lastPurchaseTime) return 'Never';
 
     const lastTime = new Date(this.purchaseInfo()!.lastPurchaseTime!).getTime();

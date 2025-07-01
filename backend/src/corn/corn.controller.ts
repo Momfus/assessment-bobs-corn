@@ -24,7 +24,8 @@ export class CornController {
       throw new HttpException(
         {
           status: HttpStatus.TOO_MANY_REQUESTS,
-          error: 'Solo puedes comprar despues que termine el tiempo de espera',
+          error:
+            'You can only make a purchase once the waiting time is finished.',
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );
